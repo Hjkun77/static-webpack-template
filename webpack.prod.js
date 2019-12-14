@@ -2,9 +2,8 @@ const path = require('path');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const UglifyJsPlugin = require("uglifyjs-webpack-plugin");
-// const WebpackMd5Hash = require("webpack-md5-hash")
 const buildPath = path.resolve(__dirname, 'public');
 
 module.exports = {
@@ -15,18 +14,23 @@ module.exports = {
 
     // https://webpack.js.org/concepts/entry-points/#multi-page-application
     entry: {
-        index: './src/index.js'
-    },
-
-    devServer: {
-        open: true
+        index: './src/resources/scripts/index.js',
+        about: './src/resources/scripts/about.js',
+        contacts: './src/resources/scripts/contacts.js'
     },
 
     // how to write the compiled files to disk
     // https://webpack.js.org/concepts/output/
     output: {
-        filename: '[name].js',
+        filename: '[name].[hash:20].js',
         path: buildPath
+    },
+
+    resolve: {
+        alias: {
+            Images: path.resolve(__dirname, "src/resources/images"),
+            Styles: path.resolve(__dirname, "src/resources/stylesheets"),
+        }
     },
 
     // https://webpack.js.org/concepts/loaders/
@@ -37,12 +41,12 @@ module.exports = {
                 exclude: /node_modules/,
                 loader: 'babel-loader',
                 options: {
-                    presets: ['@babel/preset-env']
+                    presets: ['@babel/preset-env'],
                 }
             },
             {
-                test: /\.scss$/,
-                use: ['style-loader', MiniCssExtractPlugin.loader, 'css-loader', 'postcss-loader', 'sass-loader']
+                test: /\.(sa|sc|c)ss$/,
+                use: ['style-loader', MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader']
             },
             {
                 // Now we apply rule for images
@@ -59,6 +63,7 @@ module.exports = {
                             publicPath: 'resources/images',
                             regExp: /\/([a-z0-9]+)\/[a-z0-9]+\.png$/i,
                             name: '[name].[ext]',
+                            esModule: false
                         }
                     }
                 ]
@@ -80,7 +85,6 @@ module.exports = {
             {
                 test: /\.html$/,
                 use: ['html-loader']
-
             }
         ]
     },
@@ -89,14 +93,27 @@ module.exports = {
     plugins: [
         new CleanWebpackPlugin(),
         new HtmlWebpackPlugin({
-            inject: false,
-            hash: false,
             template: './src/index.html',
+            inject: 'body',
+            chunks: ['index'],
             filename: 'index.html'
         }),
-        new MiniCssExtractPlugin({
-            filename: "resources/stylesheets/main.css"
+        new HtmlWebpackPlugin({
+            template: './src/about.html',
+            inject: 'body',
+            chunks: ['about'],
+            filename: 'about.html'
         }),
+        new HtmlWebpackPlugin({
+            template: './src/contacts.html',
+            inject: 'body',
+            chunks: ['contacts'],
+            filename: 'contacts.html'
+        }),
+        new MiniCssExtractPlugin({
+            filename: "resources/stylesheets/[name].[contenthash].css",
+            chunkFilename: "[id].[contenthash].css"
+        })
     ],
 
     // https://webpack.js.org/configuration/optimization/
@@ -105,21 +122,9 @@ module.exports = {
             new UglifyJsPlugin({
                 cache: true,
                 parallel: true,
-                sourceMap: false,
-                extractComments: 'all',
-                uglifyOptions: {
-                    compress: true,
-                    output: null
-                }
+                sourceMap: true
             }),
-            new OptimizeCSSAssetsPlugin({
-                cssProcessorOptions: {
-                    safe: true,
-                    discardComments: {
-                        removeAll: true,
-                    },
-                },
-            })
+            new OptimizeCssAssetsPlugin({})
         ]
     }
 };
